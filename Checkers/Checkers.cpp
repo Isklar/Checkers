@@ -352,7 +352,7 @@ int checkMove(int row, int column){
 	int moveDiffR = realMove[0]-realPiece[0];
 	int moveDiffC = realMove[1]-realPiece[1];
 
-	setCursor('e'); // Clear error
+	setCursor('e');
 	highlightPiece(realMove[0], realMove[1], 'h');
 
 	// Same piece is selected
@@ -507,7 +507,6 @@ int checkMove(int row, int column){
  * 21 = Valid move jump backwards right
  */
 void movePiece(int realPieceR, int realPieceC, int realMoveR, int realMoveC, int jumpSize){
-	// Removes all highlighting
 	highlightPiece(realMove[0], realMove[1], 'r');
 	highlightPiece(realPiece[0], realPiece[1], 'r');
 
@@ -551,8 +550,8 @@ void runGame(){
 
 /* Runs the player turn */
 void playerTurn(){
-	//setCursor('d');
-	//printf("Player turn - Start"); 
+	setCursor('d');
+	printf("Player turn - Start"); 
 
 	start:
 	int checkMoveReturn = 100;
@@ -570,7 +569,7 @@ void playerTurn(){
 	while(checkMoveReturn == 0);
 
 	switch(checkMoveReturn){
-	case 9: // Restart piece go
+	case 9: // Restart piece selection
 		highlightPiece(realMove[0], realMove[1], 'r');
 		highlightPiece(realPiece[0], realPiece[1], 'r');
 		setCursor('d');
@@ -598,15 +597,6 @@ void playerTurn(){
 	}
 	setCursor('d');
 	printf("Player turn - End"); 
-	_getch();
-
-	/*
-	FUNCTION_FIND_ALL_LEGAL_MOVES( BOARD_ARRAY ) Returns: array ALL_LEGAL_MOVES
-	FUNCTION_FIND_BEST_MOVE( BOARD_ARRAY, ALL_LEGAL_MOVES ) Returns: array MY_MOVE
-	FUNCTION_DO_MOVE( BOARD_ARRAY, MY_MOVE ) Throws: error ILLEGAL_MOVE Updates: MY_BOARD
-	repeat from start for each turn
-	*/
-
 }
 
 
@@ -641,4 +631,11 @@ void compTurn(){
 	else if (checkMoveReturn == -2){
 		movePiece(realPiece[0], realPiece[1],realMove[0], realMove[1], -2);
 	}
+
+	/*
+	FUNCTION_FIND_ALL_LEGAL_MOVES( BOARD_ARRAY ) Returns: array ALL_LEGAL_MOVES
+	FUNCTION_FIND_BEST_MOVE( BOARD_ARRAY, ALL_LEGAL_MOVES ) Returns: array MY_MOVE
+	FUNCTION_DO_MOVE( BOARD_ARRAY, MY_MOVE ) Throws: error ILLEGAL_MOVE Updates: MY_BOARD
+	repeat from start for each turn
+	*/
 }
