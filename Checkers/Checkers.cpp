@@ -15,10 +15,13 @@ void drawBoard();
 void fillBoard();
 void runGame();
 void playerTurn();
+void compTurn();
+
 void highlightPiece(int, int, char);
 void selectPiece();
-int checkPiece(int, int);
+int checkPiece(int, int, char);
 int checkMove(int, int);
+void movePiece(int, int, int, int, int);
 
 /* Global variable initialisation */
 COORD coord={0,0};
@@ -61,7 +64,7 @@ int BOARD_ARRAY[6][6] =
 {0, 2, 0, 2, 0, 2},
 {2, 0, 2, 0, 2, 0},
 {0, 0, 0, 0, 0, 0},
-{0, 0, 0, 0, 0, 0},
+{0, 0, 4, 0, 0, 0},
 {0, 1, 0, 1, 0, 1},
 {1, 0, 1, 0, 1, 0},
 };
@@ -191,6 +194,16 @@ void fillBoard(){
 			  case 2: // Is black
 				gotoSquare(i,j);
 				setColour(YELLOW,BLACK);
+				printf("O");
+				break;
+			  case 3: // Is white king
+				setColour(RED,BLACK);
+				gotoSquare(i,j);
+				printf("@");
+			   break;
+			  case 4: // Is black king
+				gotoSquare(i,j);
+				setColour(YELLOW,BLACK);
 				printf("@");
 				break;
 			  default:
@@ -234,6 +247,7 @@ void highlightPiece(int row, int column, char operation){
  * e = Error
  * d = Debug
  */
+
 void setCursor(char type){
 	// Text
 	if (type == 't') {
@@ -255,6 +269,7 @@ void setCursor(char type){
 		setColour(CYAN,BLACK);
 	}
 }
+
 /* Gets user input for piece and decodes to useable value for BOARD_ARRAY */
 void selectPiece(){
 
@@ -270,21 +285,37 @@ void selectPiece(){
 }
 
 /* Checks the selected piece is valid / movable by the user i.e White / 1 */
-int checkPiece(int row, int column){
+int checkPiece(int row, int column, char userType){
 
 	int pieceVal = BOARD_ARRAY[row][column];
-
-	if (pieceVal == 1 || pieceVal == 3){
-		setCursor('e'); // Clear error
-		highlightPiece(realPiece[0], realPiece[1], 'h');
-		return 1;
+	if (userType == 'p'){
+		if (pieceVal == 1 || pieceVal == 3){
+			setCursor('e'); // Clear error
+			highlightPiece(realPiece[0], realPiece[1], 'h');
+			return 1;
+		}
+		else{
+			setColour(RED,BLACK);
+			setCursor('e');
+			printf("Invalid piece");
+			highlightPiece(realPiece[0], realPiece[1], 'r');
+			return 0;
+		}
 	}
-	else{
-		setColour(RED,BLACK);
-		setCursor('e');
-		printf("Invalid piece");
-		highlightPiece(realPiece[0], realPiece[1], 'r');
-		return 0;
+	else if (userType == 'c'){
+		if (pieceVal == 2 || pieceVal == 4){
+			setCursor('e'); // Clear error
+			highlightPiece(realPiece[0], realPiece[1], 'h');
+			return 1;
+		}
+		else{
+			setColour(RED,BLACK);
+			setCursor('e');
+			printf("Invalid piece");
+			highlightPiece(realPiece[0], realPiece[1], 'r');
+			return 0;
+		}
+	
 	}
 }
 
@@ -303,36 +334,46 @@ void selectMove(){
 
 }
 
-/* Checks the selected move is valid and do-able */
+/* Checks the selected move is valid and do-able 
+ * 0 = Invalid move
+ * 1 = Valid move 1 space backwards
+ * -1 = Valid move 1 space fowards
+ * -20 = Valid move jump foward left
+ * -21 = Valid move jump foward right
+ * 20 = Valid move jump backwards left
+ * 21 = Valid move jump backwards right
+ * 9 = Restart piece selection
+*/
 int checkMove(int row, int column){
 
 	int pieceVal = BOARD_ARRAY[row][column];
 	int squareColour = BOARD_COLOURS[row][column];
 
-	int moveDiffX = realMove[0]-realPiece[0];
-	int moveDiffY = realMove[1]-realPiece[1];
+	int moveDiffR = realMove[0]-realPiece[0];
+	int moveDiffC = realMove[1]-realPiece[1];
 
 	setCursor('e'); // Clear error
 	highlightPiece(realMove[0], realMove[1], 'h');
 
+	// Same piece is selected
+	if ((realMove[0] == realPiece[0]) && (realMove[1] == realPiece[1])){
+		return 9;
+	}
+
 	// Check square is empty
 	if (pieceVal == 0){
-		setCursor('d');
-		printf("%d", pieceVal);
 		// Check square is white
 		if (squareColour == 1){
-
 			// Check move is not sideways or upwards
-			if ((moveDiffY != 0) || (moveDiffX != 0)){
-
+			if ((moveDiffC != 0) || (moveDiffR != 0)){
 				// Check move is jump or single move
-				if( (abs(moveDiffY) <= 2) || (abs(moveDiffX) <= 2)){
+				if( (abs(moveDiffC) <= 2) && (abs(moveDiffR) <= 2)){
 
 					/* Move is valid, what type of move? */
-					// Jump foward
-					if (moveDiffY == 2){
-						if (BOARD_ARRAY[row-1][column-1] == 2){
-							//valid
+					// Jump foward and left
+					if ((moveDiffR == -2) && (moveDiffC == -2)){
+						if ((BOARD_ARRAY[row+1][column+1] == 2) || BOARD_ARRAY[row+1][column+1] == 4){
+							return -20;
 						}
 						else{
 							setColour(RED,BLACK);
@@ -343,12 +384,50 @@ int checkMove(int row, int column){
 						}
 					}
 
-					// Jump backwards
-					if (moveDiffY == -2){
+					// Jump foward and right
+					if ((moveDiffR == -2) && (moveDiffC == 2)){
+						if ((BOARD_ARRAY[row+1][column-1] == 2) || BOARD_ARRAY[row+1][column-1] == 4){
+							return -21;
+						}
+						else{
+							setColour(RED,BLACK);
+							setCursor('e');
+							printf("Invalid move");
+							highlightPiece(realMove[0], realMove[1], 'r');
+							return 0;
+						}
+					}
+
+					// Jump backwards and left
+					if ((moveDiffR == 2) && (moveDiffC == -2)){
 						// isKing?
 						if (pieceVal == 3){
-							if (BOARD_ARRAY[row+1][column+1] == 2){
-							//valid
+							if ((BOARD_ARRAY[row-1][column+1] == 2) || BOARD_ARRAY[row-1][column+1] == 4){
+								return 20;
+							}
+							else{
+								setColour(RED,BLACK);
+								setCursor('e');
+								printf("Invalid move");
+								highlightPiece(realMove[0], realMove[1], 'r');
+								return 0;
+							}
+						}
+						else{
+							setColour(RED,BLACK);
+							setCursor('e');
+							printf("Invalid move");
+							highlightPiece(realMove[0], realMove[1], 'r');
+							return 0;
+						}
+					}
+
+					// Jump backwards and right
+					if ((moveDiffR == 2) && (moveDiffC == 2)){
+						// isKing?
+						if (pieceVal == 3){
+							if ((BOARD_ARRAY[row-1][column-1] == 2) || BOARD_ARRAY[row-1][column-1] == 4){
+								return 21;
 							}
 							else{
 								setColour(RED,BLACK);
@@ -368,14 +447,14 @@ int checkMove(int row, int column){
 					}
 
 					// Normal foward move
-					if (moveDiffY == 1){
-						//valid
+					if (moveDiffR == -1){
+						return 1;
 					}
 
 					// Normal backward move
-					if (moveDiffY == -1){
+					if (moveDiffR == 1){
 						if (pieceVal == 3){
-							//valid
+							return -1;
 						}
 						else{
 							setColour(RED,BLACK);
@@ -419,6 +498,43 @@ int checkMove(int row, int column){
 	}
 }
 
+/* Moves the selected piece - jumpSize codes:
+ * 1 = Valid move 1 space backward
+ * -1 = Valid move 1 space foward
+ * -20 = Valid move jump foward left
+ * -21 = Valid move jump foward right
+ * 20 = Valid move jump backwards left
+ * 21 = Valid move jump backwards right
+ */
+void movePiece(int realPieceR, int realPieceC, int realMoveR, int realMoveC, int jumpSize){
+	// Removes all highlighting
+	highlightPiece(realMove[0], realMove[1], 'r');
+	highlightPiece(realPiece[0], realPiece[1], 'r');
+
+	// Store current value
+	int pieceVal = BOARD_ARRAY[realPieceR][realPieceC];
+	// Set old piece to empty square
+	BOARD_ARRAY[realPieceR][realPieceC] = 0;
+	// Set new piece to old piece value
+	BOARD_ARRAY[realMoveR][realMoveC] = pieceVal;
+
+	// Clear jumped piece
+	if (jumpSize == -20){ // Foward left
+		BOARD_ARRAY[realMoveR+1][realMoveC+1] = 0;
+	}
+	else if (jumpSize == -21){ // Foward right
+		BOARD_ARRAY[realMoveR+1][realMoveC-1] = 0;
+	}
+	else if (jumpSize == 20){ // Backwards left
+		BOARD_ARRAY[realMoveR-1][realMoveC+1] = 0;
+	}
+	else if (jumpSize == 21){ // Backwards right
+		BOARD_ARRAY[realMoveR-1][realMoveC-1] = 0;
+	}
+
+	fillBoard();
+}
+
 /* Runs the game, runs turns and checks for win */
 void runGame(){
 
@@ -435,38 +551,54 @@ void runGame(){
 
 /* Runs the player turn */
 void playerTurn(){
-// Player selects piece to move < Move to function?
-// Comp checks if valid piece
-	do{
-	selectPiece();
-	checkPiece(realPiece[0], realPiece[1]);
-	}
-	while(checkPiece(realPiece[0], realPiece[1]) == 0);
+	//setCursor('d');
+	//printf("Player turn - Start"); 
+
+	start:
+	int checkMoveReturn = 100;
 
 	do{
-	selectMove();
-	checkMove(realMove[0], realMove[1]);
+		selectPiece();
+		checkPiece(realPiece[0], realPiece[1], 'p');
 	}
-	while(checkMove(realMove[0], realMove[1]) == 0);
+	while(checkPiece(realPiece[0], realPiece[1], 'p') == 0);
 
+	do{
+		selectMove();
+		checkMoveReturn = checkMove(realMove[0], realMove[1]);
+	}
+	while(checkMoveReturn == 0);
+
+	switch(checkMoveReturn){
+	case 9: // Restart piece go
+		highlightPiece(realMove[0], realMove[1], 'r');
+		highlightPiece(realPiece[0], realPiece[1], 'r');
+		setCursor('d');
+		printf("Player turn - Restart"); 
+		goto start;
+		break;
+	case 1: // Backwards move
+		movePiece(realPiece[0], realPiece[1], realMove[0], realMove[1], 1);
+		break;
+	case -1: // Foward move
+		movePiece(realPiece[0], realPiece[1], realMove[0], realMove[1], -1);
+		break;
+	case -20: // Foward left
+		movePiece(realPiece[0], realPiece[1], realMove[0], realMove[1], -20);
+		break;
+	case -21: // Foward right
+		movePiece(realPiece[0], realPiece[1], realMove[0], realMove[1], -21);
+		break;
+	case 20: // Backwards left
+		movePiece(realPiece[0], realPiece[1], realMove[0], realMove[1], 20);
+		break;
+	case 21: // Backwards right
+		movePiece(realPiece[0], realPiece[1], realMove[0], realMove[1], 21);
+		break;
+	}
 	setCursor('d');
-	printf("%d,%d,%d,%d",realPiece[0],realPiece[1],realMove[0],realMove[1]); 
-	//test
-// Player choses where to move piece
-// Comp checks if valid move
-
+	printf("Player turn - End"); 
 	_getch();
-
-
-	/*
-	FUNCTION decodePiece(selectedPiece);
-	decodes inputted coordinate into BOARD_ARRAY value
-	*/
-
-	/* 
-	FUNCTION checkPiece(BOARD_ARRAY):
-	checks to see if chosen piece is movable / the users colour
-	*/
 
 	/*
 	FUNCTION_FIND_ALL_LEGAL_MOVES( BOARD_ARRAY ) Returns: array ALL_LEGAL_MOVES
@@ -475,4 +607,38 @@ void playerTurn(){
 	repeat from start for each turn
 	*/
 
+}
+
+
+/* Runs the Computers turn */
+void compTurn(){
+	setCursor('d');
+	printf("Comp turn - Start"); 
+
+	int checkMoveReturn = 100;
+
+	do{
+		// Select random piece
+		checkPiece(realPiece[0], realPiece[1], 'c');
+	}
+	while(checkPiece(realPiece[0], realPiece[1], 'c') == 0);
+
+	do{
+		// Select move for piece
+		checkMoveReturn = checkMove(realMove[0], realMove[1]);
+	}
+	while(checkMoveReturn == 0);
+
+	// Valid move 1 space
+	if (checkMoveReturn == 1 || checkMoveReturn == -1){
+		movePiece(realPiece[0], realPiece[1],realMove[0], realMove[1], 1);
+	}
+	// Valid move 2 jump
+	else if (checkMoveReturn == 2){
+		movePiece(realPiece[0], realPiece[1],realMove[0], realMove[1], 2);
+	}
+	// Valid move 2 jump backwards
+	else if (checkMoveReturn == -2){
+		movePiece(realPiece[0], realPiece[1],realMove[0], realMove[1], -2);
+	}
 }
